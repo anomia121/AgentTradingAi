@@ -25,6 +25,8 @@ from anthropic import Anthropic
 
 TWELVEDATA_API_KEY = os.environ.get("TWELVEDATA_API_KEY")
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY")
+ANTHROPIC_BASE_URL = os.environ.get("ANTHROPIC_BASE_URL")  # opsional: isi kalau pakai router/gateway pihak ketiga (misal 9Router)
+ANTHROPIC_MODEL = os.environ.get("ANTHROPIC_MODEL", "claude-sonnet-4-6")  # bisa diganti sesuai model yang tersedia di provider kamu
 TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID")
 
@@ -35,7 +37,7 @@ CANDLES_PER_TF = 60  # jumlah candle historis yang diambil per timeframe
 TWELVEDATA_BASE_URL = "https://api.twelvedata.com/time_series"
 TELEGRAM_API_URL = f"https://api.telegram.org/bot{{token}}/sendMessage"
 
-REQUEST_DELAY_SECONDS = 1.5  # jeda antar request supaya tidak kena rate limit
+REQUEST_DELAY_SECONDS = 8  # jeda antar request (TwelveData free tier: limit 8 request/menit)
 
 
 def check_env():
@@ -135,10 +137,14 @@ Format output:
 
 
 def ask_claude(prompt: str) -> str:
-    """Kirim prompt ke Claude API dan ambil hasil analisanya."""
-    client = Anthropic(api_key=ANTHROPIC_API_KEY)
+    """Kirim prompt ke Claude API (atau kompatibel) dan ambil hasil analisanya."""
+    client_kwargs = {"api_key": ANTHROPIC_API_KEY}
+    if ANTHROPIC_BASE_URL:
+        client_kwargs["base_url"] = ANTHROPIC_BASE_URL
+
+    client = Anthropic(**client_kwargs)
     message = client.messages.create(
-        model="claude-sonnet-4-6",
+        model=ANTHROPIC_MODEL,
         max_tokens=4000,
         messages=[{"role": "user", "content": prompt}],
     )
